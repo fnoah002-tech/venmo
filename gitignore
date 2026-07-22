@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.log
+maker_config.json
+hook_library.json
+hook_registry.json
+performance.json
+offers.json
+fonts/
+assets/
+creatives/
+vF*.html
+v*.html
+v*.js
+*.bat
