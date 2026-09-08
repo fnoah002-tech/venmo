@@ -5,6 +5,7 @@ exports.handler = async function (event) {
     const clickId = q.click_id || "";
     const payout = Number(q.payout || 5.30);
 
+    // Gleicher ClickFlare-Click = gleiche Whop Event-ID
     const eventId =
       q.txid ||
       (clickId ? `reco_${clickId}` : `reco_${Date.now()}`);
@@ -14,12 +15,13 @@ exports.handler = async function (event) {
       event_name: "complete_registration",
       action_source: "website",
       currency: "usd",
-      value: Number.isFinite(payout) && payout > 0 ? payout : 5.30,
+      value:
+        Number.isFinite(payout) && payout > 0
+          ? payout
+          : 5.30,
       event_id: eventId,
 
       context: {
-        click_id: clickId,
-
         ad_id: q.ad_id || "",
         adset_id: q.adset_id || "",
         campaign_id: q.meta_campaign_id || "",
@@ -49,12 +51,13 @@ exports.handler = async function (event) {
 
     const whopResponse = await response.text();
 
-    console.log("ClickFlare conversion received:", {
+    console.log("ClickFlare -> Whop conversion", {
       clickId,
+      eventId,
       payout,
-      ad_id: q.ad_id,
-      adset_id: q.adset_id,
-      meta_campaign_id: q.meta_campaign_id,
+      ad_id: q.ad_id || "",
+      adset_id: q.adset_id || "",
+      campaign_id: q.meta_campaign_id || "",
       whop_status: response.status
     });
 
@@ -69,6 +72,7 @@ exports.handler = async function (event) {
         whop_response: whopResponse
       })
     };
+
   } catch (error) {
     console.error("Bridge error:", error);
 
