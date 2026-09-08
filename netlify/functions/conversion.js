@@ -3,38 +3,24 @@ exports.handler = async function (event) {
     const q = event.queryStringParameters || {};
 
     const clickId = q.click_id || "";
-    const payout = Number(q.payout || 5.30);
+    const payout = Number(q.payout);
 
-    // Gleicher ClickFlare-Click = gleiche Whop Event-ID
-    const eventId =
-      q.txid ||
-      (clickId ? `reco_${clickId}` : `reco_${Date.now()}`);
+    const value =
+      Number.isFinite(payout) && payout > 0
+        ? payout
+        : 5.30;
+
+    const eventId = clickId
+      ? `reco_${clickId}`
+      : `reco_${Date.now()}`;
 
     const payload = {
       company_id: "biz_O5LDZ6SDymAiyD",
       event_name: "complete_registration",
       action_source: "website",
       currency: "usd",
-      value:
-        Number.isFinite(payout) && payout > 0
-          ? payout
-          : 5.30,
-      event_id: eventId,
-
-      context: {
-        ad_id: q.ad_id || "",
-        adset_id: q.adset_id || "",
-        campaign_id: q.meta_campaign_id || "",
-
-        ad_name: q.ad_name || "",
-        adset_name: q.adset_name || "",
-        campaign_name: q.campaign_name || "",
-
-        source: q.source || "",
-        placement: q.placement || "",
-
-        clickflare_campaign_id: q.cf_campaign_id || ""
-      }
+      value: value,
+      event_id: eventId
     };
 
     const response = await fetch(
@@ -51,13 +37,10 @@ exports.handler = async function (event) {
 
     const whopResponse = await response.text();
 
-    console.log("ClickFlare -> Whop conversion", {
-      clickId,
-      eventId,
-      payout,
-      ad_id: q.ad_id || "",
-      adset_id: q.adset_id || "",
-      campaign_id: q.meta_campaign_id || "",
+    console.log("ClickFlare -> Whop", {
+      click_id: clickId,
+      value,
+      event_id: eventId,
       whop_status: response.status
     });
 
@@ -74,7 +57,7 @@ exports.handler = async function (event) {
     };
 
   } catch (error) {
-    console.error("Bridge error:", error);
+    console.error(error);
 
     return {
       statusCode: 500,
