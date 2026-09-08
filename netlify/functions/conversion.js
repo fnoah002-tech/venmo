@@ -1,14 +1,38 @@
-exports.handler = async function () {
+exports.handler = async function (event) {
   try {
-    const eventId = `test_${Date.now()}`;
+    const q = event.queryStringParameters || {};
+
+    const clickId = q.click_id || "";
+    const payout = Number(q.payout || 5.30);
+
+    const eventId =
+      q.txid ||
+      (clickId ? `reco_${clickId}` : `reco_${Date.now()}`);
 
     const payload = {
       company_id: "biz_O5LDZ6SDymAiyD",
       event_name: "complete_registration",
       action_source: "website",
       currency: "usd",
-      value: 5.30,
-      event_id: eventId
+      value: Number.isFinite(payout) && payout > 0 ? payout : 5.30,
+      event_id: eventId,
+
+      context: {
+        click_id: clickId,
+
+        ad_id: q.ad_id || "",
+        adset_id: q.adset_id || "",
+        campaign_id: q.meta_campaign_id || "",
+
+        ad_name: q.ad_name || "",
+        adset_name: q.adset_name || "",
+        campaign_name: q.campaign_name || "",
+
+        source: q.source || "",
+        placement: q.placement || "",
+
+        clickflare_campaign_id: q.cf_campaign_id || ""
+      }
     };
 
     const response = await fetch(
@@ -23,20 +47,31 @@ exports.handler = async function () {
       }
     );
 
-    const result = await response.text();
+    const whopResponse = await response.text();
+
+    console.log("ClickFlare conversion received:", {
+      clickId,
+      payout,
+      ad_id: q.ad_id,
+      adset_id: q.adset_id,
+      meta_campaign_id: q.meta_campaign_id,
+      whop_status: response.status
+    });
 
     return {
-      statusCode: response.status,
+      statusCode: response.ok ? 200 : 502,
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
         success: response.ok,
-        status: response.status,
-        whop_response: result
+        whop_status: response.status,
+        whop_response: whopResponse
       })
     };
   } catch (error) {
+    console.error("Bridge error:", error);
+
     return {
       statusCode: 500,
       headers: {
