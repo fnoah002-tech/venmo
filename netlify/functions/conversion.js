@@ -14,13 +14,21 @@ exports.handler = async function (event) {
       ? `reco_${clickId}`
       : `reco_${Date.now()}`;
 
+    const context = {};
+
+    if (q.campaign_id) context.ad_campaign_id = q.campaign_id;
+    if (q.adset_id) context.ad_set_id = q.adset_id;
+    if (q.ad_id) context.ad_id = q.ad_id;
+    if (q.fbclid) context.fbclid = q.fbclid;
+
     const payload = {
       company_id: "biz_O5LDZ6SDymAiyD",
       event_name: "complete_registration",
       action_source: "website",
       currency: "usd",
-      value: value,
-      event_id: eventId
+      value,
+      event_id: eventId,
+      context
     };
 
     const response = await fetch(
@@ -40,6 +48,7 @@ exports.handler = async function (event) {
     console.log("ClickFlare -> Whop", {
       click_id: clickId,
       value,
+      context,
       event_id: eventId,
       whop_status: response.status
     });
@@ -52,7 +61,8 @@ exports.handler = async function (event) {
       body: JSON.stringify({
         success: response.ok,
         whop_status: response.status,
-        whop_response: whopResponse
+        whop_response: whopResponse,
+        context
       })
     };
 
