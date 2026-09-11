@@ -15,7 +15,9 @@ exports.handler = async function (event) {
 
       return {
         statusCode: 400,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           success: false,
           error: "Missing or invalid payout",
@@ -25,12 +27,11 @@ exports.handler = async function (event) {
 
     const value = payout;
 
-    // Transaction ID is unique per completed offer and prevents duplicates.
     const eventId = txid
-      ? "freecash_" + txid
+      ? "reco_" + txid
       : clickId
-        ? "freecash_" + clickId
-        : "freecash_" + Date.now();
+        ? "reco_" + clickId
+        : "reco_" + Date.now();
 
     const context = {};
 
@@ -71,7 +72,9 @@ exports.handler = async function (event) {
 
     return {
       statusCode: response.ok ? 200 : 502,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         success: response.ok,
         whop_status: response.status,
@@ -84,7 +87,9 @@ exports.handler = async function (event) {
 
     return {
       statusCode: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         success: false,
         error: error.message,
