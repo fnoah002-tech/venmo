@@ -1,12 +1,39 @@
 exports.handler = async function (event) {
   try {
     const q = event.queryStringParameters || {};
+
     const clickId = q.click_id || "";
+    const txid = q.txid || q.transaction_id || "";
     const payout = Number(q.payout);
-    const value = Number.isFinite(payout) && payout > 0 ? payout : 5.30;
-    const eventId = clickId ? "reco_" + clickId : "reco_" + Date.now();
+
+    if (!Number.isFinite(payout) || payout <= 0) {
+      console.error("Missing or invalid payout", {
+        click_id: clickId,
+        txid,
+        payout: q.payout,
+      });
+
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          success: false,
+          error: "Missing or invalid payout",
+        }),
+      };
+    }
+
+    const value = payout;
+
+    // Transaction ID is unique per completed offer and prevents duplicates.
+    const eventId = txid
+      ? "freecash_" + txid
+      : clickId
+        ? "freecash_" + clickId
+        : "freecash_" + Date.now();
 
     const context = {};
+
     if (q.campaign_id) context.ad_campaign_id = q.campaign_id;
     if (q.adset_id) context.ad_set_id = q.adset_id;
     if (q.ad_id) context.ad_id = q.ad_id;
@@ -35,6 +62,7 @@ exports.handler = async function (event) {
 
     console.log("ClickFlare -> Whop", {
       click_id: clickId,
+      txid,
       value,
       event_id: eventId,
       context,
