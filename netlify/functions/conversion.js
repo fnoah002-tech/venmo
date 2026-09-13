@@ -1,62 +1,47 @@
 exports.handler = async function (event) {
   try {
     const q = event.queryStringParameters || {};
-
     const clickId = q.click_id || "";
-    const txid = q.txid || q.transaction_id || "";
+    const txid = q.txid || "";
     const payout = Number(q.payout);
 
     if (!Number.isFinite(payout) || payout <= 0) {
-      console.error("Missing or invalid payout", {
-        click_id: clickId,
-        txid,
-        payout: q.payout,
-      });
-
       return {
-        statusCode: 400,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          success: false,
-          error: "Missing or invalid payout",
-        }),
+        statusCode: 204,
+        body: ""
       };
     }
 
-    const value = payout;
-
-    const eventId = txid
-      ? "reco_" + txid
-      : clickId
-        ? "reco_" + clickId
-        : "reco_" + Date.now();
+    const valid = (value) =>
+      value && !value.includes("{") && !value.includes("}");
 
     const context = {};
+    if (valid(q.campaign_id)) context.ad_campaign_id = q.campaign_id;
+    if (valid(q.adset_id)) context.ad_set_id = q.adset_id;
+    if (valid(q.ad_id)) context.ad_id = q.ad_id;
+    if (valid(q.fbclid)) context.fbclid = q.fbclid;
 
-    if (q.campaign_id) context.ad_campaign_id = q.campaign_id;
-    if (q.adset_id) context.ad_set_id = q.adset_id;
-    if (q.ad_id) context.ad_id = q.ad_id;
-    if (q.fbclid) context.fbclid = q.fbclid;
+    const eventId = txid
+      ? `taprain_${txid}`
+      : `taprain_${clickId}`;
 
     const payload = {
       account_id: "biz_O5LDZ6SDymAiyD",
       event_name: "complete_registration",
       action_source: "website",
       currency: "usd",
-      value,
+      value: payout,
       event_id: eventId,
-      context,
+      context
     };
 
     const response = await fetch("https://api.whop.com/api/v1/events", {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + process.env.WHOP_API_KEY,
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.WHOP_API_KEY}`,
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
     const whopResponse = await response.text();
@@ -64,36 +49,25 @@ exports.handler = async function (event) {
     console.log("ClickFlare -> Whop", {
       click_id: clickId,
       txid,
-      value,
+      value: payout,
       event_id: eventId,
       context,
-      whop_status: response.status,
+      whop_status: response.status
     });
 
     return {
       statusCode: response.ok ? 200 : 502,
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         success: response.ok,
         whop_status: response.status,
-        whop_response: whopResponse,
-        context,
-      }),
+        whop_response: whopResponse
+      })
     };
   } catch (error) {
-    console.error(error);
-
     return {
       statusCode: 500,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-      }),
+      body: JSON.stringify({ success: false, error: error.message })
     };
   }
 };
