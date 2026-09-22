@@ -47,7 +47,9 @@ exports.handler = async function (event) {
       value: payout,
       event_id: eventId,
       context,
-      whop_status: response.status
+      whop_status: response.status,
+      whop_ok: response.ok,
+      whop_response: whopResponse
     });
 
     return {
@@ -60,6 +62,11 @@ exports.handler = async function (event) {
       })
     };
   } catch (error) {
+    console.error("ClickFlare -> Whop error", {
+      message: error.message,
+      stack: error.stack
+    });
+
     return {
       statusCode: 500,
       body: JSON.stringify({
